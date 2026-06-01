@@ -1,17 +1,17 @@
 import CoreAudio
 import Foundation
 
-#if canImport(IOBluetooth)
-import IOBluetooth
-#endif
-
 /// Enumerates output-capable audio devices, watches for hardware changes, and provides the
 /// public, fully supported controls macOS exposes: switching the default output device and
 /// reading/writing a device's hardware master volume + mute. Also surfaces transport type
-/// (Bluetooth / USB / built-in …) and best-effort Bluetooth battery for the device picker.
+/// (Bluetooth / USB / built-in …) for the device picker.
 ///
 /// This consolidates what used to be `AudioDeviceObserver` and adds device-list enumeration,
 /// switching, and per-device volume control.
+///
+/// > Bluetooth battery is intentionally not read here: IOBluetooth is privacy-sensitive and requires
+/// > `NSBluetoothAlwaysUsageDescription` (accessing it without that key crashes the app), so we skip
+/// > it to avoid a Bluetooth permission prompt for a minor nice-to-have.
 final class OutputDeviceManager: @unchecked Sendable {
     private let queue = DispatchQueue(label: "louddd.OutputDeviceManager")
     private var listenersInstalled = false
@@ -79,7 +79,7 @@ final class OutputDeviceManager: @unchecked Sendable {
             transport: transport,
             volume: volume(for: id),
             isMuted: isMuted(for: id),
-            batteryPercent: transport.isBluetooth ? batteryPercent(for: id) : nil
+            batteryPercent: nil
         )
     }
 
@@ -205,25 +205,5 @@ final class OutputDeviceManager: @unchecked Sendable {
             return false
         }
         return value != 0
-    }
-
-    /// Best-effort Bluetooth battery for a Core Audio device, matched to a paired device by name.
-    private func batteryPercent(for id: AudioObjectID) -> Int? {
-        #if canImport(IOBluetooth)
-        guard let deviceName = name(for: id),
-              let paired = IOBluetoothDevice.pairedDevices() as? [IOBluetoothDevice] else {
-            return nil
-        }
-        let match = paired.first { device in
-            guard let bluetoothName = device.name else { return false }
-            return deviceName.localizedCaseInsensitiveContains(bluetoothName)
-                || bluetoothName.localizedCaseInsensitiveContains(deviceName)
-        }
-        // `batteryPercentCombined` is a 0…1 fraction on supported devices; nil/0 means unknown.
-        if let value = match?.value(forKey: "batteryPercentCombined") as? NSNumber, value.doubleValue > 0 {
-            return Int((value.doubleValue * 100).rounded())
-        }
-        #endif
-        return nil
     }
 }

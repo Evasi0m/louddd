@@ -86,7 +86,7 @@ final class AudioControlService {
 
     private func ingest(_ updatedApps: [AudioApp]) {
         var visibleApps = updatedApps
-            .filter { $0.isMixable && ($0.isAudible || $0.isMuted) && ($0.peakLevel > 0.035 || $0.isMuted) }
+            .filter { $0.isMixable && ($0.isAudible || $0.isMuted) }
             .sorted { lhs, rhs in
                 if lhs.isFaceTimeCandidate != rhs.isFaceTimeCandidate {
                     return lhs.isFaceTimeCandidate

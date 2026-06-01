@@ -25,6 +25,15 @@ actor SystemAudioProcessBackend: AudioBackend {
     private var engineActive = false
     private var ownPID = pid_t(ProcessInfo.processInfo.processIdentifier)
 
+    /// Latest metadata + last-audible timestamp per app, used to keep the visible list stable.
+    /// Tapping an app mutes its normal output (so `isRunningOutput`/peak briefly read zero); without
+    /// hysteresis that caused the row to flicker in and out. We keep an app for a short grace window
+    /// after it last showed output *or* real metered activity.
+    private var knownApps: [AudioApp.ID: AudioApp] = [:]
+    private var lastAudibleAt: [AudioApp.ID: Date] = [:]
+    private let visibilityGrace: TimeInterval = 2.5
+    private let meterActivityThreshold: Double = 0.02
+
     nonisolated var appUpdates: AsyncStream<[AudioApp]> {
         AsyncStream { continuation in
             Task { await self.setAppContinuation(continuation) }
@@ -129,22 +138,60 @@ actor SystemAudioProcessBackend: AudioBackend {
     // MARK: - Polling
 
     private func tick() async {
-        let processes = Self.scanRunningOutputProcesses(excludingPID: ownPID)
-
-        if engineActive {
-            controlledIDs = await tapController.reconcile(controllableApps: processes)
-        }
-
+        let now = Date()
         let meters = engineActive ? await tapController.meters() : [:]
 
-        let apps = processes.map { base -> AudioApp in
+        // Apps the system reports as actively running output right now.
+        for app in Self.scanRunningOutputProcesses(excludingPID: ownPID) {
+            knownApps[app.id] = app
+            lastAudibleAt[app.id] = now
+        }
+
+        // Apps we're tapping count as audible while their metered level is non-trivial, even though
+        // their normal output is muted (which is why we can't rely on isRunningOutput for them).
+        for (id, meter) in meters where max(meter.peak, meter.rms) > meterActivityThreshold {
+            if knownApps[id] != nil {
+                lastAudibleAt[id] = now
+            }
+        }
+
+        // Expire anything past the grace window; keep the rest as the visible candidate set.
+        var expired: [AudioApp.ID] = []
+        var candidates: [AudioApp] = []
+        for (id, lastSeen) in lastAudibleAt {
+            if now.timeIntervalSince(lastSeen) > visibilityGrace {
+                expired.append(id)
+            } else if let base = knownApps[id] {
+                candidates.append(base)
+            }
+        }
+        for id in expired {
+            lastAudibleAt[id] = nil
+            knownApps[id] = nil
+        }
+
+        if engineActive {
+            controlledIDs = await tapController.reconcile(controllableApps: candidates)
+        }
+
+        let apps = candidates.map { base -> AudioApp in
             var app = base
             let meter = meters[app.id]
             app.volume = gains[app.id] ?? 1
             app.isMuted = mutes.contains(app.id)
             app.canControlVolume = engineActive && controlledIDs.contains(app.id)
-            app.peakLevel = meter?.peak ?? (app.isMuted ? 0 : 0.5)
-            app.rmsLevel = meter?.rms ?? (app.isMuted ? 0 : 0.32)
+            app.isAudible = true
+            if app.isMuted {
+                app.peakLevel = 0
+                app.rmsLevel = 0
+            } else if engineActive {
+                app.peakLevel = meter?.peak ?? 0
+                app.rmsLevel = meter?.rms ?? 0
+            } else {
+                // Detection-only (no audio-recording permission): no real meters available.
+                app.peakLevel = 0.5
+                app.rmsLevel = 0.32
+            }
             return app
         }
 
@@ -191,20 +238,17 @@ actor SystemAudioProcessBackend: AudioBackend {
                 return nil
             }
 
-            let bundleID = bundleIdentifier(for: processObjectID)
-            let runningApp = NSRunningApplication(processIdentifier: pid)
-            let displayName = runningApp?.localizedName
-                ?? bundleID?.components(separatedBy: ".").last
-                ?? "Process \(pid)"
-            let id = AudioApp.identity(processID: pid, bundleIdentifier: bundleID)
-            let isFaceTime = bundleID == "com.apple.FaceTime" || displayName.localizedCaseInsensitiveContains("FaceTime")
+            let owner = resolveOwner(pid: pid, audioBundleID: bundleIdentifier(for: processObjectID))
+            let id = AudioApp.identity(processID: pid, bundleIdentifier: owner.bundleID)
+            let isFaceTime = owner.bundleID == "com.apple.FaceTime"
+                || owner.name.localizedCaseInsensitiveContains("FaceTime")
 
             return AudioApp(
                 id: id,
                 processID: pid,
-                bundleIdentifier: bundleID,
-                displayName: displayName,
-                iconPathHint: runningApp?.bundleURL?.path,
+                bundleIdentifier: owner.bundleID,
+                displayName: owner.name,
+                iconPathHint: owner.iconPath,
                 volume: 1,
                 isMuted: false,
                 isMixable: true,
@@ -215,6 +259,36 @@ actor SystemAudioProcessBackend: AudioBackend {
                 isFaceTimeCandidate: isFaceTime
             )
         }
+    }
+
+    private struct ResolvedOwner {
+        let bundleID: String?
+        let name: String
+        let iconPath: String?
+    }
+
+    /// Resolve (and cache) the owning app for an audio pid. Caching keeps a process's identity stable
+    /// across polls — re-resolving every tick occasionally returned the helper instead of the parent
+    /// app, which flipped the app id and made the row jump/jitter.
+    private static var ownerCache: [pid_t: ResolvedOwner] = [:]
+
+    private static func resolveOwner(pid: pid_t, audioBundleID: String?) -> ResolvedOwner {
+        if let cached = ownerCache[pid] {
+            return cached
+        }
+        let owner = ProcessAppResolver.owningApplication(pid: pid)
+        let resolved = ResolvedOwner(
+            bundleID: owner?.bundleIdentifier ?? audioBundleID,
+            name: owner?.localizedName
+                ?? audioBundleID?.components(separatedBy: ".").last
+                ?? "Process \(pid)",
+            iconPath: owner?.bundleURL?.path
+        )
+        ownerCache[pid] = resolved
+        if ownerCache.count > 128 {
+            ownerCache.removeAll(keepingCapacity: true)
+        }
+        return resolved
     }
 
     private static func processObjectIDs() -> [AudioObjectID] {
