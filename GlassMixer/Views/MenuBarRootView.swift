@@ -178,7 +178,7 @@ private struct PanelBackgroundView: View {
                         CGPoint(x: size.width * (0.82 + 0.03 * cos(phase * 0.5)), y: size.height * 0.22),
                         CGPoint(x: size.width * (0.56 + 0.05 * sin(phase * 0.4)), y: size.height * 0.92)
                     ]
-                    let colors: [Color] = [.cyan.opacity(0.18), .orange.opacity(0.14), .pink.opacity(0.15)]
+                    let colors: [Color] = [.cyan.opacity(0.10), .indigo.opacity(0.08), .blue.opacity(0.09)]
 
                     for index in points.indices {
                         let radius = CGFloat(90 + energyScale * 20 + Double(index) * 18)

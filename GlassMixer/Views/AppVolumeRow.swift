@@ -1,5 +1,8 @@
 import SwiftUI
 
+/// A single app's mixer card. Neutral Liquid Glass surface (no heavy colored tint); state is shown
+/// with small, high-contrast accents — a status pill, a clean accent slider, and labelled control
+/// chips whose on/off states are always legible (the previous full-red muted card hid its controls).
 struct AppVolumeRow: View {
     let app: AudioApp
     let isBypassed: Bool
@@ -13,156 +16,138 @@ struct AppVolumeRow: View {
     @State private var isHovering = false
 
     var body: some View {
-        VStack(spacing: 11) {
-            HStack(spacing: 10) {
-                appIcon
-
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 6) {
-                        Text(app.displayName)
-                            .font(.system(size: 14, weight: .bold, design: .rounded))
-                            .lineLimit(1)
-
-                        if app.isAudible && !app.isMuted {
-                            liveBadge
-                        }
-                    }
-
-                    HStack(spacing: 6) {
-                        AudioActivityWaveView(level: app.isMuted ? 0 : app.peakLevel)
-                            .frame(width: 34, height: 12)
-                        Text(rowSubtitle)
-                    }
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.secondary)
-                }
-
-                Spacer()
-
-                Text(Formatters.percent(localVolume))
-                    .font(.system(size: 15, weight: .black, design: .rounded))
-                    .foregroundStyle(app.canControlVolume && !app.isMuted ? .primary : .secondary)
-                    .contentTransition(.numericText())
-            }
-
-            controlCluster
-
-            HStack(spacing: 10) {
-                Image(systemName: "speaker.wave.1.fill")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(.secondary)
-
-                LiquidSlider(value: $localVolume, range: 0...1.5) { value in
-                    guard app.canControlVolume else { return }
-                    onVolumeChanged(value)
-                }
-                .disabled(!app.canControlVolume || app.isMuted)
-                .opacity(app.canControlVolume && !app.isMuted ? 1 : 0.45)
-
-                Image(systemName: "speaker.wave.3.fill")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(.secondary)
-            }
+        VStack(spacing: 13) {
+            header
+            sliderRow
+            controlRow
         }
-        .padding(13)
-        .glassCard(cornerRadius: 18, interactive: true, tint: rowTint)
-        .scaleEffect(isHovering ? 1.012 : 1)
-        .onHover { hovering in
-            isHovering = hovering
-        }
-        .animation(.spring(response: 0.28, dampingFraction: 0.78), value: isHovering)
-        .onAppear {
-            localVolume = app.clampedVolume
-        }
+        .padding(14)
+        .glassCard(cornerRadius: 20, interactive: true)
+        .scaleEffect(isHovering ? 1.008 : 1)
+        .onHover { isHovering = $0 }
+        .animation(.spring(response: 0.28, dampingFraction: 0.8), value: isHovering)
+        .animation(.snappy(duration: 0.2), value: app.isMuted)
+        .animation(.snappy(duration: 0.2), value: isSoloed)
+        .onAppear { localVolume = app.clampedVolume }
         .onChange(of: app.volume) { _, newValue in
             guard abs(newValue - localVolume) > 0.015 else { return }
             localVolume = newValue
         }
     }
 
-    private var controlCluster: some View {
+    // MARK: Header
+
+    private var header: some View {
+        HStack(spacing: 11) {
+            appIcon
+
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 6) {
+                    Text(app.displayName)
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .lineLimit(1)
+                    statusPill
+                }
+
+                HStack(spacing: 6) {
+                    if app.canControlVolume && !app.isMuted {
+                        AudioActivityWaveView(level: app.peakLevel)
+                            .frame(width: 28, height: 11)
+                    }
+                    Text(subtitle)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer(minLength: 6)
+
+            Text(Formatters.percent(localVolume))
+                .font(.system(size: 17, weight: .heavy, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(app.isMuted ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.primary))
+                .contentTransition(.numericText())
+        }
+    }
+
+    @ViewBuilder
+    private var statusPill: some View {
+        if app.isMuted {
+            StatusPill(text: "Muted", color: .red, systemImage: "speaker.slash.fill")
+        } else if !app.canControlVolume {
+            StatusPill(text: "Detected", color: .secondary, systemImage: "dot.radiowaves.left.and.right")
+        } else if app.peakLevel > 0.04 {
+            StatusPill(text: "Live", color: .green, showsDot: true)
+        }
+    }
+
+    private var subtitle: String {
+        if !app.canControlVolume { return "Grant audio permission to control" }
+        if app.isMuted { return "Muted" }
+        if isSoloed { return "Soloed" }
+        return app.isFaceTimeCandidate ? "Voice priority" : "Media stream"
+    }
+
+    // MARK: Slider
+
+    private var sliderRow: some View {
+        HStack(spacing: 9) {
+            Image(systemName: "speaker.fill")
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(.tertiary)
+
+            LiquidSlider(
+                value: $localVolume,
+                range: 0...1.5,
+                accent: app.isFaceTimeCandidate ? [.teal, .blue] : [.blue, .indigo]
+            ) { value in
+                guard app.canControlVolume else { return }
+                onVolumeChanged(value)
+            }
+            .disabled(!app.canControlVolume || app.isMuted)
+
+            Image(systemName: "speaker.wave.3.fill")
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(.tertiary)
+        }
+    }
+
+    // MARK: Controls
+
+    private var controlRow: some View {
         HStack(spacing: 8) {
-            iconToggle(
-                systemName: app.isMuted ? "speaker.slash.fill" : "speaker.fill",
+            ControlChip(
+                systemImage: app.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill",
+                label: app.isMuted ? "Unmute" : "Mute",
                 isOn: app.isMuted,
-                tint: .red,
-                help: app.isMuted ? "Unmute" : "Mute",
+                onColor: .red,
                 action: onMuteTapped
             )
 
-            iconToggle(
-                systemName: "headphones",
+            ControlChip(
+                systemImage: "headphones",
+                label: "Solo",
                 isOn: isSoloed,
-                tint: .blue,
-                help: isSoloed ? "Stop solo" : "Solo this app",
+                onColor: .blue,
                 action: onSoloTapped
             )
 
-            Spacer()
+            Spacer(minLength: 0)
 
-            iconToggle(
-                systemName: isBypassed ? "hand.raised.fill" : "wand.and.stars",
+            ControlChip(
+                systemImage: isBypassed ? "hand.raised.fill" : "wand.and.stars",
+                label: isBypassed ? "Manual" : "Auto",
                 isOn: isBypassed,
-                tint: .orange,
-                help: isBypassed ? "Manual bypass enabled" : "Use Smart Focus",
+                onColor: .orange,
                 action: onBypassTapped
             )
         }
         .disabled(!app.canControlVolume)
-        .opacity(app.canControlVolume ? 1 : 0.5)
+        .opacity(app.canControlVolume ? 1 : 0.45)
     }
 
-    private func iconToggle(
-        systemName: String,
-        isOn: Bool,
-        tint: Color,
-        help: String,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Image(systemName: systemName)
-                .font(.system(size: 12, weight: .semibold))
-                .frame(width: 26, height: 26)
-                .foregroundStyle(isOn ? AnyShapeStyle(tint) : AnyShapeStyle(.secondary))
-                .background(
-                    Circle().fill(isOn ? tint.opacity(0.16) : .white.opacity(0.06))
-                )
-        }
-        .buttonStyle(.plain)
-        .help(help)
-    }
-
-    private var rowSubtitle: String {
-        if !app.canControlVolume {
-            return "Detected · grant audio permission"
-        }
-        if app.isMuted {
-            return "Muted"
-        }
-        return app.isFaceTimeCandidate ? "Voice priority" : "Media stream"
-    }
-
-    private var liveBadge: some View {
-        HStack(spacing: 4) {
-            Circle()
-                .fill(.green)
-                .frame(width: 6, height: 6)
-                .shadow(color: .green.opacity(0.75), radius: 4)
-
-            Text("LIVE")
-                .font(.system(size: 9, weight: .black, design: .rounded))
-        }
-        .foregroundStyle(.green)
-        .padding(.horizontal, 6)
-        .padding(.vertical, 3)
-        .background(.green.opacity(0.12), in: Capsule())
-    }
-
-    private var rowTint: Color? {
-        if app.isMuted { return .red }
-        if isSoloed { return .blue }
-        return app.isFaceTimeCandidate ? .cyan : .orange
-    }
+    // MARK: App icon
 
     private var appIcon: some View {
         Group {
@@ -171,14 +156,83 @@ struct AppVolumeRow: View {
                     .resizable()
                     .scaledToFit()
             } else {
-                Image(systemName: "app.fill")
+                Image(systemName: "app.dashed")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(.secondary)
             }
         }
-        .frame(width: 36, height: 36)
+        .frame(width: 34, height: 34)
         .padding(3)
-        .background(.white.opacity(0.10), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
-        .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(.white.opacity(0.12), lineWidth: 1)
+        }
+    }
+}
+
+/// Small status capsule with a strong, self-contained color so it reads on any background.
+private struct StatusPill: View {
+    let text: String
+    var color: Color
+    var systemImage: String? = nil
+    var showsDot: Bool = false
+
+    var body: some View {
+        HStack(spacing: 3) {
+            if showsDot {
+                Circle()
+                    .fill(color)
+                    .frame(width: 5, height: 5)
+                    .shadow(color: color.opacity(0.7), radius: 3)
+            } else if let systemImage {
+                Image(systemName: systemImage)
+                    .font(.system(size: 8, weight: .bold))
+            }
+            Text(text.uppercased())
+                .font(.system(size: 8.5, weight: .black, design: .rounded))
+        }
+        .foregroundStyle(color)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2.5)
+        .background(color.opacity(0.14), in: Capsule())
+    }
+}
+
+/// A labelled toggle chip. Off = subtle neutral glass; on = filled accent with white content, so the
+/// state is unmistakable (and the action label flips, e.g. Mute → Unmute).
+private struct ControlChip: View {
+    let systemImage: String
+    let label: String
+    let isOn: Bool
+    let onColor: Color
+    let action: () -> Void
+
+    @State private var isHovering = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 11, weight: .bold))
+                Text(label)
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+            }
+            .foregroundStyle(isOn ? AnyShapeStyle(.white) : AnyShapeStyle(.secondary))
+            .padding(.horizontal, 10)
+            .frame(height: 28)
+            .background {
+                Capsule()
+                    .fill(isOn ? AnyShapeStyle(onColor) : AnyShapeStyle(.white.opacity(isHovering ? 0.16 : 0.08)))
+            }
+            .overlay {
+                Capsule()
+                    .strokeBorder(.white.opacity(isOn ? 0 : 0.10), lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
+        .animation(.snappy(duration: 0.15), value: isOn)
+        .animation(.snappy(duration: 0.15), value: isHovering)
     }
 }
