@@ -21,14 +21,20 @@ struct GlassMixerApp: App {
     }
 }
 
-/// Live menu-bar icon: the waveform glyph swells with the loudest active app via SF Symbols'
-/// variable-value rendering, so the meter is visible without opening the panel.
+/// Live menu-bar icon. Uses the custom `MenuBarIcon` asset (rendered as a template so macOS tints it
+/// for light/dark menu bars) once you add an image; until then it falls back to the SF Symbol
+/// waveform that swells with the loudest active app via variable-value rendering.
 private struct MenuBarLabel: View {
     var store: MixerStore
 
     var body: some View {
-        let peak = store.apps.map(\.peakLevel).max() ?? 0
-        Image(systemName: "waveform", variableValue: max(0.12, min(peak, 1)))
+        if let custom = NSImage(named: "MenuBarIcon") {
+            Image(nsImage: custom)
+                .renderingMode(.template)
+        } else {
+            let peak = store.apps.map(\.peakLevel).max() ?? 0
+            Image(systemName: "waveform", variableValue: max(0.12, min(peak, 1)))
+        }
     }
 }
 
