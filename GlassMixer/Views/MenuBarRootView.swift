@@ -65,21 +65,7 @@ struct MenuBarRootView: View {
 
     private var header: some View {
         HStack(spacing: 10) {
-            ZStack {
-                Circle()
-                    .fill(
-                        AngularGradient(
-                            colors: [.cyan, .mint, .yellow, .orange, .pink, .cyan],
-                            center: .center
-                        )
-                    )
-                    .frame(width: 38, height: 38)
-                    .shadow(color: .cyan.opacity(0.28), radius: 14)
-
-                Image(systemName: "waveform")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white)
-            }
+            logo
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("louddd!")
@@ -94,6 +80,34 @@ struct MenuBarRootView: View {
             settingsButton
             quitButton
         }
+    }
+
+    /// Panel logo. Uses the custom `PanelLogo` asset once you add an image; otherwise falls back to
+    /// the gradient waveform badge.
+    private var logo: some View {
+        Group {
+            if let custom = NSImage(named: "PanelLogo") {
+                Image(nsImage: custom)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                ZStack {
+                    Circle()
+                        .fill(
+                            AngularGradient(
+                                colors: [.cyan, .mint, .yellow, .orange, .pink, .cyan],
+                                center: .center
+                            )
+                        )
+                    Image(systemName: "waveform")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.white)
+                }
+            }
+        }
+        .frame(width: 38, height: 38)
+        .clipShape(Circle())
+        .shadow(color: .cyan.opacity(0.28), radius: 14)
     }
 
     private var settingsButton: some View {
