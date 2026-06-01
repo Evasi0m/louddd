@@ -3,7 +3,10 @@ import SwiftUI
 struct AppVolumeRow: View {
     let app: AudioApp
     let isBypassed: Bool
+    let isSoloed: Bool
     let onVolumeChanged: (Double) -> Void
+    let onMuteTapped: () -> Void
+    let onSoloTapped: () -> Void
     let onBypassTapped: () -> Void
 
     @State private var localVolume: Double = 1
@@ -20,11 +23,13 @@ struct AppVolumeRow: View {
                             .font(.system(size: 14, weight: .bold, design: .rounded))
                             .lineLimit(1)
 
-                        liveBadge
+                        if app.isAudible && !app.isMuted {
+                            liveBadge
+                        }
                     }
 
                     HStack(spacing: 6) {
-                        AudioActivityWaveView(level: app.peakLevel)
+                        AudioActivityWaveView(level: app.isMuted ? 0 : app.peakLevel)
                             .frame(width: 34, height: 12)
                         Text(rowSubtitle)
                     }
@@ -36,19 +41,11 @@ struct AppVolumeRow: View {
 
                 Text(Formatters.percent(localVolume))
                     .font(.system(size: 15, weight: .black, design: .rounded))
-                    .foregroundStyle(app.canControlVolume ? .primary : .secondary)
+                    .foregroundStyle(app.canControlVolume && !app.isMuted ? .primary : .secondary)
                     .contentTransition(.numericText())
-
-                Button(action: onBypassTapped) {
-                    Image(systemName: isBypassed ? "hand.raised.fill" : "wand.and.stars")
-                        .font(.system(size: 13, weight: .semibold))
-                        .frame(width: 26, height: 26)
-                        .background(isBypassed ? .orange.opacity(0.16) : .white.opacity(0.08), in: Circle())
-                        .foregroundStyle(isBypassed ? .orange : .secondary)
-                }
-                .buttonStyle(.plain)
-                .help(isBypassed ? "Manual bypass enabled" : "Use Smart Focus")
             }
+
+            controlCluster
 
             HStack(spacing: 10) {
                 Image(systemName: "speaker.wave.1.fill")
@@ -59,8 +56,8 @@ struct AppVolumeRow: View {
                     guard app.canControlVolume else { return }
                     onVolumeChanged(value)
                 }
-                .disabled(!app.canControlVolume)
-                .opacity(app.canControlVolume ? 1 : 0.45)
+                .disabled(!app.canControlVolume || app.isMuted)
+                .opacity(app.canControlVolume && !app.isMuted ? 1 : 0.45)
 
                 Image(systemName: "speaker.wave.3.fill")
                     .font(.system(size: 11, weight: .bold))
@@ -68,16 +65,7 @@ struct AppVolumeRow: View {
             }
         }
         .padding(13)
-        .background {
-            ZStack {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(.regularMaterial.opacity(isHovering ? 0.92 : 0.74))
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(rowGradient.opacity(isHovering ? 0.18 : 0.10))
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .strokeBorder(.white.opacity(isHovering ? 0.20 : 0.10), lineWidth: 1)
-            }
-        }
+        .glassCard(cornerRadius: 18, interactive: true, tint: rowTint)
         .scaleEffect(isHovering ? 1.012 : 1)
         .onHover { hovering in
             isHovering = hovering
@@ -92,9 +80,64 @@ struct AppVolumeRow: View {
         }
     }
 
+    private var controlCluster: some View {
+        HStack(spacing: 8) {
+            iconToggle(
+                systemName: app.isMuted ? "speaker.slash.fill" : "speaker.fill",
+                isOn: app.isMuted,
+                tint: .red,
+                help: app.isMuted ? "Unmute" : "Mute",
+                action: onMuteTapped
+            )
+
+            iconToggle(
+                systemName: "headphones",
+                isOn: isSoloed,
+                tint: .blue,
+                help: isSoloed ? "Stop solo" : "Solo this app",
+                action: onSoloTapped
+            )
+
+            Spacer()
+
+            iconToggle(
+                systemName: isBypassed ? "hand.raised.fill" : "wand.and.stars",
+                isOn: isBypassed,
+                tint: .orange,
+                help: isBypassed ? "Manual bypass enabled" : "Use Smart Focus",
+                action: onBypassTapped
+            )
+        }
+        .disabled(!app.canControlVolume)
+        .opacity(app.canControlVolume ? 1 : 0.5)
+    }
+
+    private func iconToggle(
+        systemName: String,
+        isOn: Bool,
+        tint: Color,
+        help: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 12, weight: .semibold))
+                .frame(width: 26, height: 26)
+                .foregroundStyle(isOn ? AnyShapeStyle(tint) : AnyShapeStyle(.secondary))
+                .background(
+                    Circle().fill(isOn ? tint.opacity(0.16) : .white.opacity(0.06))
+                )
+        }
+        .buttonStyle(.plain)
+        .help(help)
+    }
+
     private var rowSubtitle: String {
         if !app.canControlVolume {
-            return "Detected audio - routing needed"
+            return "Detected · grant audio permission"
+        }
+        if app.isMuted {
+            return "Muted"
         }
         return app.isFaceTimeCandidate ? "Voice priority" : "Media stream"
     }
@@ -115,14 +158,10 @@ struct AppVolumeRow: View {
         .background(.green.opacity(0.12), in: Capsule())
     }
 
-    private var rowGradient: LinearGradient {
-        LinearGradient(
-            colors: app.isFaceTimeCandidate
-                ? [.green, .cyan, .blue]
-                : [.pink, .orange, .yellow],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
+    private var rowTint: Color? {
+        if app.isMuted { return .red }
+        if isSoloed { return .blue }
+        return app.isFaceTimeCandidate ? .cyan : .orange
     }
 
     private var appIcon: some View {

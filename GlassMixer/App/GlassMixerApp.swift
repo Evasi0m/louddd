@@ -15,9 +15,20 @@ struct GlassMixerApp: App {
             MenuBarRootView(store: store)
                 .frame(width: 390)
         } label: {
-            Image(systemName: "waveform.circle.fill")
+            MenuBarLabel(store: store)
         }
         .menuBarExtraStyle(.window)
+    }
+}
+
+/// Live menu-bar icon: the waveform glyph swells with the loudest active app via SF Symbols'
+/// variable-value rendering, so the meter is visible without opening the panel.
+private struct MenuBarLabel: View {
+    var store: MixerStore
+
+    var body: some View {
+        let peak = store.apps.map(\.peakLevel).max() ?? 0
+        Image(systemName: "waveform", variableValue: max(0.12, min(peak, 1)))
     }
 }
 

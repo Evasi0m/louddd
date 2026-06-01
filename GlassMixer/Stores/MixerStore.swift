@@ -12,12 +12,29 @@ final class MixerStore {
         }
     }
 
-    init(service: AudioControlService) {
+    init(service: AudioControlService, preferences: PreferencesStore = PreferencesStore()) {
         self.service = service
+        self.focusProfile.isEnabled = preferences.focusEnabled
     }
+
+    // MARK: - Apps
 
     var apps: [AudioApp] {
         service.apps
+    }
+
+    var soloedAppID: AudioApp.ID? {
+        service.soloedAppID
+    }
+
+    // MARK: - Devices
+
+    var availableDevices: [AudioDevice] {
+        service.availableDevices
+    }
+
+    var currentOutputDevice: AudioDevice? {
+        service.currentOutputDevice
     }
 
     var outputDeviceName: String {
@@ -32,8 +49,18 @@ final class MixerStore {
         service.start()
     }
 
+    // MARK: - Per-app actions
+
     func setVolume(_ volume: Double, for app: AudioApp) {
         service.setVolume(volume, for: app)
+    }
+
+    func toggleMute(for app: AudioApp) {
+        service.setMute(!app.isMuted, for: app)
+    }
+
+    func toggleSolo(for app: AudioApp) {
+        service.toggleSolo(for: app)
     }
 
     func toggleFocus() {
@@ -46,5 +73,19 @@ final class MixerStore {
         } else {
             focusProfile.manuallyBypassedAppIDs.insert(app.id)
         }
+    }
+
+    // MARK: - Device actions
+
+    func selectDevice(_ device: AudioDevice) {
+        service.selectDevice(device)
+    }
+
+    func setDeviceVolume(_ volume: Double, for device: AudioDevice) {
+        service.setDeviceVolume(volume, for: device)
+    }
+
+    func setDeviceMute(_ muted: Bool, for device: AudioDevice) {
+        service.setDeviceMute(muted, for: device)
     }
 }

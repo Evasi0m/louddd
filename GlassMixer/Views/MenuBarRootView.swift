@@ -4,6 +4,7 @@ import SwiftUI
 struct MenuBarRootView: View {
     @Bindable var store: MixerStore
     @Namespace private var rowNamespace
+    @State private var showDevicePicker = false
 
     var body: some View {
         VStack(spacing: 18) {
@@ -19,19 +20,27 @@ struct MenuBarRootView: View {
             } else {
                 ActiveMixSummaryView(apps: store.apps)
 
-                VStack(spacing: 11) {
+                LiquidGlassGroup(spacing: 11) {
                     ForEach(store.apps) { app in
                         AppVolumeRow(
                             app: app,
                             isBypassed: store.focusProfile.shouldBypass(appID: app.id),
+                            isSoloed: store.soloedAppID == app.id,
                             onVolumeChanged: { volume in
                                 store.setVolume(volume, for: app)
+                            },
+                            onMuteTapped: {
+                                store.toggleMute(for: app)
+                            },
+                            onSoloTapped: {
+                                store.toggleSolo(for: app)
                             },
                             onBypassTapped: {
                                 store.toggleManualBypass(for: app)
                             }
                         )
                         .matchedGeometryEffect(id: app.id, in: rowNamespace)
+                        .glassMorphID(app.id, in: rowNamespace)
                         .transition(.asymmetric(
                             insertion: .push(from: .top).combined(with: .opacity).combined(with: .scale(scale: 0.96)),
                             removal: .push(from: .trailing).combined(with: .opacity)
@@ -72,43 +81,76 @@ struct MenuBarRootView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("louddd!")
                     .font(.system(size: 17, weight: .bold, design: .rounded))
-                Text(store.outputDeviceName)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+
+                deviceChip
             }
 
             Spacer()
 
-            Button {
-                NSApplication.shared.terminate(nil)
-            } label: {
-                Image(systemName: "power")
-                    .font(.system(size: 13, weight: .semibold))
-                    .frame(width: 30, height: 30)
-                    .foregroundStyle(.secondary)
-                    .background(.secondary.opacity(0.10), in: Circle())
-            }
-            .buttonStyle(.plain)
-            .help("Quit")
-
-            Button {
-                store.toggleFocus()
-            } label: {
-                ZStack {
-                    Circle()
-                        .fill(store.focusProfile.isEnabled ? .green.opacity(0.18) : .secondary.opacity(0.12))
-                        .frame(width: 32, height: 32)
-
-                    Image(systemName: store.focusProfile.isEnabled ? "person.wave.2.fill" : "person.wave.2")
-                        .font(.system(size: 15, weight: .semibold))
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(store.focusProfile.isEnabled ? .green : .secondary)
-                }
-            }
-            .buttonStyle(.plain)
-            .help("Smart Focus")
+            quitButton
+            focusButton
         }
+    }
+
+    /// Tappable chip showing the current output device; opens the Liquid Glass device picker.
+    private var deviceChip: some View {
+        Button {
+            showDevicePicker.toggle()
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: store.currentOutputDevice?.transport.iconName ?? "hifispeaker")
+                    .font(.system(size: 10, weight: .semibold))
+                Text(store.outputDeviceName)
+                    .font(.system(size: 11))
+                    .lineLimit(1)
+                if let battery = store.currentOutputDevice?.batteryPercent {
+                    Text("· \(battery)%")
+                        .font(.system(size: 10, weight: .medium))
+                }
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 8, weight: .bold))
+            }
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .glassCard(cornerRadius: 9, interactive: true)
+        }
+        .buttonStyle(.plain)
+        .help("Choose output device")
+        .popover(isPresented: $showDevicePicker, arrowEdge: .bottom) {
+            OutputDevicePickerView(store: store) {
+                showDevicePicker = false
+            }
+        }
+    }
+
+    private var quitButton: some View {
+        Button {
+            NSApplication.shared.terminate(nil)
+        } label: {
+            Image(systemName: "power")
+                .font(.system(size: 13, weight: .semibold))
+                .frame(width: 30, height: 30)
+                .foregroundStyle(.secondary)
+                .glassCard(cornerRadius: 15, interactive: true)
+        }
+        .buttonStyle(.plain)
+        .help("Quit")
+    }
+
+    private var focusButton: some View {
+        Button {
+            store.toggleFocus()
+        } label: {
+            Image(systemName: store.focusProfile.isEnabled ? "person.wave.2.fill" : "person.wave.2")
+                .font(.system(size: 15, weight: .semibold))
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(store.focusProfile.isEnabled ? AnyShapeStyle(.green) : AnyShapeStyle(.secondary))
+                .frame(width: 32, height: 32)
+                .glassCard(cornerRadius: 16, interactive: true, tint: store.focusProfile.isEnabled ? .green : nil)
+        }
+        .buttonStyle(.plain)
+        .help("Smart Focus")
     }
 
     private func inlineStatus(_ message: String) -> some View {
@@ -127,9 +169,8 @@ private struct PanelBackgroundView: View {
         TimelineView(.animation) { timeline in
             let phase = timeline.date.timeIntervalSinceReferenceDate
             ZStack {
-                Rectangle()
-                    .fill(.ultraThinMaterial)
-
+                // Energy-reactive color wash sits *behind* the Liquid Glass material so the glass
+                // picks it up as a tint without sampling other glass surfaces.
                 Canvas { context, size in
                     let energyScale = min(max(energy, 0.2), 2.2)
                     let points = [
@@ -137,7 +178,7 @@ private struct PanelBackgroundView: View {
                         CGPoint(x: size.width * (0.82 + 0.03 * cos(phase * 0.5)), y: size.height * 0.22),
                         CGPoint(x: size.width * (0.56 + 0.05 * sin(phase * 0.4)), y: size.height * 0.92)
                     ]
-                    let colors: [Color] = [.cyan.opacity(0.16), .orange.opacity(0.12), .pink.opacity(0.13)]
+                    let colors: [Color] = [.cyan.opacity(0.18), .orange.opacity(0.14), .pink.opacity(0.15)]
 
                     for index in points.indices {
                         let radius = CGFloat(90 + energyScale * 20 + Double(index) * 18)
@@ -150,8 +191,18 @@ private struct PanelBackgroundView: View {
                         context.fill(Path(ellipseIn: rect), with: .color(colors[index]))
                     }
                 }
-                .blur(radius: 22)
+                .blur(radius: 26)
             }
+            .background(panelBase)
+        }
+    }
+
+    @ViewBuilder
+    private var panelBase: some View {
+        if #available(macOS 26.0, *) {
+            Rectangle().fill(.background.opacity(0.4))
+        } else {
+            Rectangle().fill(.ultraThinMaterial)
         }
     }
 }
@@ -185,10 +236,6 @@ private struct ActiveMixSummaryView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .background(.black.opacity(0.08), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(.white.opacity(0.09), lineWidth: 1)
-        }
+        .glassCard(cornerRadius: 16)
     }
 }
