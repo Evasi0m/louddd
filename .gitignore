@@ -1,0 +1,7 @@
+.DS_Store
+GlassMixer/.DS_Store
+.codex/
+outputs/
+work/
+*.xcuserstate
+xcuserdata/
