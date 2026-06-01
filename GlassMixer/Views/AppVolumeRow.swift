@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// A single app's mixer card. Neutral Liquid Glass surface (no heavy colored tint); state is shown
@@ -149,6 +150,11 @@ struct AppVolumeRow: View {
         Group {
             if let image = AppIconResolver.icon(for: app.bundleIdentifier, iconPath: app.iconPathHint) {
                 Image(nsImage: image)
+                    .resizable()
+                    .scaledToFit()
+            } else if let placeholder = NSImage(named: "AppPlaceholder") {
+                // Custom fallback art for apps whose system icon can't be resolved.
+                Image(nsImage: placeholder)
                     .resizable()
                     .scaledToFit()
             } else {

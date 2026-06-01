@@ -47,6 +47,19 @@ APIs and work without that permission.
 - `AudioProcessTapController` — the per-app tap + aggregate + render engine.
 - `MockAudioBackend` / `VirtualAudioDriverBackend` — simulation + forwarding boundary for UI work.
 
+## Custom icons
+
+Icons live in `GlassMixer/Assets.xcassets`. Open it in Xcode and drag images into the wells (the sets
+are pre-created and wired up — until you add images, the app falls back to SF Symbols, so nothing is
+blank):
+
+- **App icon** → `AppIcon` set. Drop a 1024×1024 PNG (use the inspector's *Single Size* option, or fill
+  the 16–512 @1x/@2x wells). Already set as the target's app icon.
+- **Menu-bar icon** → `MenuBarIcon` set. Add a small monochrome image (~18pt, PDF or @1x/@2x/@3x PNG);
+  it's marked as a *template* so macOS tints it for light/dark menu bars automatically.
+- **Per-app fallback icon** → `AppPlaceholder` set. Shown for apps whose real icon can't be resolved
+  (real app icons otherwise come from the system automatically).
+
 ## Requirements
 
 - **macOS 26 (Tahoe)** and **Xcode 26** — required for the native Liquid Glass APIs.
