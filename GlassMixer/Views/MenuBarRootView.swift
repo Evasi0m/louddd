@@ -53,7 +53,9 @@ struct MenuBarRootView: View {
         .padding(.top, 18)
         .padding(.bottom, 16)
         .background { PanelBackgroundView(energy: store.apps.map(\.peakLevel).reduce(0, +)) }
-        .animation(.spring(response: 0.42, dampingFraction: 0.82), value: store.apps)
+        // Animate only when the set/order of apps changes — not on every 300ms meter update,
+        // which otherwise kept the rows (and their icons) springing/jittering continuously.
+        .animation(.spring(response: 0.42, dampingFraction: 0.82), value: store.apps.map(\.id))
         .animation(.smooth(duration: 0.24), value: store.focusProfile)
         .task {
             store.start()

@@ -238,23 +238,17 @@ actor SystemAudioProcessBackend: AudioBackend {
                 return nil
             }
 
-            let bundleID = bundleIdentifier(for: processObjectID)
-            // Audio often comes from a helper process; attribute it to the owning app (name + icon).
-            let owner = ProcessAppResolver.owningApplication(pid: pid)
-            let resolvedBundleID = owner?.bundleIdentifier ?? bundleID
-            let displayName = owner?.localizedName
-                ?? bundleID?.components(separatedBy: ".").last
-                ?? "Process \(pid)"
-            let id = AudioApp.identity(processID: pid, bundleIdentifier: resolvedBundleID)
-            let isFaceTime = resolvedBundleID == "com.apple.FaceTime"
-                || displayName.localizedCaseInsensitiveContains("FaceTime")
+            let owner = resolveOwner(pid: pid, audioBundleID: bundleIdentifier(for: processObjectID))
+            let id = AudioApp.identity(processID: pid, bundleIdentifier: owner.bundleID)
+            let isFaceTime = owner.bundleID == "com.apple.FaceTime"
+                || owner.name.localizedCaseInsensitiveContains("FaceTime")
 
             return AudioApp(
                 id: id,
                 processID: pid,
-                bundleIdentifier: resolvedBundleID,
-                displayName: displayName,
-                iconPathHint: owner?.bundleURL?.path,
+                bundleIdentifier: owner.bundleID,
+                displayName: owner.name,
+                iconPathHint: owner.iconPath,
                 volume: 1,
                 isMuted: false,
                 isMixable: true,
@@ -265,6 +259,36 @@ actor SystemAudioProcessBackend: AudioBackend {
                 isFaceTimeCandidate: isFaceTime
             )
         }
+    }
+
+    private struct ResolvedOwner {
+        let bundleID: String?
+        let name: String
+        let iconPath: String?
+    }
+
+    /// Resolve (and cache) the owning app for an audio pid. Caching keeps a process's identity stable
+    /// across polls — re-resolving every tick occasionally returned the helper instead of the parent
+    /// app, which flipped the app id and made the row jump/jitter.
+    private static var ownerCache: [pid_t: ResolvedOwner] = [:]
+
+    private static func resolveOwner(pid: pid_t, audioBundleID: String?) -> ResolvedOwner {
+        if let cached = ownerCache[pid] {
+            return cached
+        }
+        let owner = ProcessAppResolver.owningApplication(pid: pid)
+        let resolved = ResolvedOwner(
+            bundleID: owner?.bundleIdentifier ?? audioBundleID,
+            name: owner?.localizedName
+                ?? audioBundleID?.components(separatedBy: ".").last
+                ?? "Process \(pid)",
+            iconPath: owner?.bundleURL?.path
+        )
+        ownerCache[pid] = resolved
+        if ownerCache.count > 128 {
+            ownerCache.removeAll(keepingCapacity: true)
+        }
+        return resolved
     }
 
     private static func processObjectIDs() -> [AudioObjectID] {

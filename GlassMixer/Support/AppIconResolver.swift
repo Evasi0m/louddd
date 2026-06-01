@@ -2,16 +2,29 @@ import AppKit
 import Darwin
 
 enum AppIconResolver {
+    // Cache resolved icons so SwiftUI gets a stable NSImage instance each render instead of a freshly
+    // decoded one every poll, which caused the icon to flicker.
+    private static var cache: [String: NSImage] = [:]
+
     /// Resolve an app icon, preferring a bundle-id lookup and falling back to a known bundle path.
     static func icon(for bundleIdentifier: String?, iconPath: String? = nil) -> NSImage? {
+        let key = bundleIdentifier ?? iconPath
+        if let key, let cached = cache[key] {
+            return cached
+        }
+
+        var image: NSImage?
         if let bundleIdentifier,
            let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier) {
-            return NSWorkspace.shared.icon(forFile: url.path)
+            image = NSWorkspace.shared.icon(forFile: url.path)
+        } else if let iconPath {
+            image = NSWorkspace.shared.icon(forFile: iconPath)
         }
-        if let iconPath {
-            return NSWorkspace.shared.icon(forFile: iconPath)
+
+        if let key, let image {
+            cache[key] = image
         }
-        return nil
+        return image
     }
 }
 
