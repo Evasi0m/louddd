@@ -12,6 +12,9 @@ final class MixerStore {
         }
     }
 
+    /// Whether the app launches automatically at login (backed by SMAppService).
+    var launchesAtLogin: Bool = LoginItemManager.isEnabled
+
     init(service: AudioControlService, preferences: PreferencesStore = PreferencesStore()) {
         self.service = service
         self.focusProfile.isEnabled = preferences.focusEnabled
@@ -65,6 +68,15 @@ final class MixerStore {
 
     func toggleFocus() {
         focusProfile.isEnabled.toggle()
+    }
+
+    func setLaunchAtLogin(_ enabled: Bool) {
+        do {
+            try LoginItemManager.setEnabled(enabled)
+        } catch {
+            // Reflect the real state if the system rejected the change.
+        }
+        launchesAtLogin = LoginItemManager.isEnabled
     }
 
     func toggleManualBypass(for app: AudioApp) {

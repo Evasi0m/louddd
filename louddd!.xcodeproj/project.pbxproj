@@ -31,6 +31,7 @@
 		100000000000000000000118 /* CoreAudioProperty.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000018 /* CoreAudioProperty.swift */; };
 		100000000000000000000119 /* PreferencesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000019 /* PreferencesStore.swift */; };
 		10000000000000000000011A /* GlassStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000001A /* GlassStyle.swift */; };
+		100000000000000000000122 /* LoginItemManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000022 /* LoginItemManager.swift */; };
 		100000000000000000000121 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000021 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -62,6 +63,7 @@
 		10000000000000000000001A /* GlassStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassStyle.swift; sourceTree = "<group>"; };
 		10000000000000000000001B /* GlassMixer.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GlassMixer.entitlements; sourceTree = "<group>"; };
 		100000000000000000000021 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		100000000000000000000022 /* LoginItemManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginItemManager.swift; sourceTree = "<group>"; };
 		100000000000000000000020 /* louddd!.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "louddd!.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -162,6 +164,7 @@
 				100000000000000000000018 /* CoreAudioProperty.swift */,
 				100000000000000000000019 /* PreferencesStore.swift */,
 				10000000000000000000001A /* GlassStyle.swift */,
+				100000000000000000000022 /* LoginItemManager.swift */,
 			);
 			path = Support;
 			sourceTree = "<group>";
@@ -259,6 +262,7 @@
 				100000000000000000000118 /* CoreAudioProperty.swift in Sources */,
 				100000000000000000000119 /* PreferencesStore.swift in Sources */,
 				10000000000000000000011A /* GlassStyle.swift in Sources */,
+				100000000000000000000122 /* LoginItemManager.swift in Sources */,
 				10000000000000000000010A /* MixerStore.swift in Sources */,
 				10000000000000000000010B /* MenuBarRootView.swift in Sources */,
 				10000000000000000000010C /* AppVolumeRow.swift in Sources */,

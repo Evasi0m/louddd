@@ -5,6 +5,7 @@ struct MenuBarRootView: View {
     @Bindable var store: MixerStore
     @Namespace private var rowNamespace
     @State private var showDevicePicker = false
+    @State private var showSettings = false
 
     var body: some View {
         VStack(spacing: 18) {
@@ -89,8 +90,26 @@ struct MenuBarRootView: View {
 
             Spacer()
 
-            quitButton
             focusButton
+            settingsButton
+            quitButton
+        }
+    }
+
+    private var settingsButton: some View {
+        Button {
+            showSettings.toggle()
+        } label: {
+            Image(systemName: "gearshape.fill")
+                .font(.system(size: 13, weight: .semibold))
+                .frame(width: 30, height: 30)
+                .foregroundStyle(.secondary)
+                .glassCard(cornerRadius: 15, interactive: true)
+        }
+        .buttonStyle(.plain)
+        .help("Settings")
+        .popover(isPresented: $showSettings, arrowEdge: .bottom) {
+            SettingsPopover(store: store)
         }
     }
 
@@ -239,5 +258,32 @@ private struct ActiveMixSummaryView: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
         .glassCard(cornerRadius: 16)
+    }
+}
+
+private struct SettingsPopover: View {
+    @Bindable var store: MixerStore
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Settings")
+                .font(.system(size: 13, weight: .bold, design: .rounded))
+
+            Toggle(isOn: Binding(
+                get: { store.launchesAtLogin },
+                set: { store.setLaunchAtLogin($0) }
+            )) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Open at Login")
+                        .font(.system(size: 12, weight: .semibold))
+                    Text("Start louddd! automatically when you log in")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .toggleStyle(.switch)
+        }
+        .padding(16)
+        .frame(width: 270)
     }
 }
