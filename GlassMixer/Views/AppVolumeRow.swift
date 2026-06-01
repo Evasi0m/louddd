@@ -13,7 +13,6 @@ struct AppVolumeRow: View {
     let onBypassTapped: () -> Void
 
     @State private var localVolume: Double = 1
-    @State private var isHovering = false
 
     var body: some View {
         VStack(spacing: 13) {
@@ -22,10 +21,7 @@ struct AppVolumeRow: View {
             controlRow
         }
         .padding(14)
-        .glassCard(cornerRadius: 20, interactive: true)
-        .scaleEffect(isHovering ? 1.008 : 1)
-        .onHover { isHovering = $0 }
-        .animation(.spring(response: 0.28, dampingFraction: 0.8), value: isHovering)
+        .glassCard(cornerRadius: 20)
         .animation(.snappy(duration: 0.2), value: app.isMuted)
         .animation(.snappy(duration: 0.2), value: isSoloed)
         .onAppear { localVolume = app.clampedVolume }
@@ -151,7 +147,7 @@ struct AppVolumeRow: View {
 
     private var appIcon: some View {
         Group {
-            if let image = AppIconResolver.icon(for: app.bundleIdentifier) {
+            if let image = AppIconResolver.icon(for: app.bundleIdentifier, iconPath: app.iconPathHint) {
                 Image(nsImage: image)
                     .resizable()
                     .scaledToFit()
@@ -208,8 +204,6 @@ private struct ControlChip: View {
     let onColor: Color
     let action: () -> Void
 
-    @State private var isHovering = false
-
     var body: some View {
         Button(action: action) {
             HStack(spacing: 5) {
@@ -223,7 +217,7 @@ private struct ControlChip: View {
             .frame(height: 28)
             .background {
                 Capsule()
-                    .fill(isOn ? AnyShapeStyle(onColor) : AnyShapeStyle(.white.opacity(isHovering ? 0.16 : 0.08)))
+                    .fill(isOn ? AnyShapeStyle(onColor) : AnyShapeStyle(.white.opacity(0.08)))
             }
             .overlay {
                 Capsule()
@@ -231,8 +225,6 @@ private struct ControlChip: View {
             }
         }
         .buttonStyle(.plain)
-        .onHover { isHovering = $0 }
         .animation(.snappy(duration: 0.15), value: isOn)
-        .animation(.snappy(duration: 0.15), value: isHovering)
     }
 }

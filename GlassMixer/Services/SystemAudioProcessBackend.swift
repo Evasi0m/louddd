@@ -239,19 +239,22 @@ actor SystemAudioProcessBackend: AudioBackend {
             }
 
             let bundleID = bundleIdentifier(for: processObjectID)
-            let runningApp = NSRunningApplication(processIdentifier: pid)
-            let displayName = runningApp?.localizedName
+            // Audio often comes from a helper process; attribute it to the owning app (name + icon).
+            let owner = ProcessAppResolver.owningApplication(pid: pid)
+            let resolvedBundleID = owner?.bundleIdentifier ?? bundleID
+            let displayName = owner?.localizedName
                 ?? bundleID?.components(separatedBy: ".").last
                 ?? "Process \(pid)"
-            let id = AudioApp.identity(processID: pid, bundleIdentifier: bundleID)
-            let isFaceTime = bundleID == "com.apple.FaceTime" || displayName.localizedCaseInsensitiveContains("FaceTime")
+            let id = AudioApp.identity(processID: pid, bundleIdentifier: resolvedBundleID)
+            let isFaceTime = resolvedBundleID == "com.apple.FaceTime"
+                || displayName.localizedCaseInsensitiveContains("FaceTime")
 
             return AudioApp(
                 id: id,
                 processID: pid,
-                bundleIdentifier: bundleID,
+                bundleIdentifier: resolvedBundleID,
                 displayName: displayName,
-                iconPathHint: runningApp?.bundleURL?.path,
+                iconPathHint: owner?.bundleURL?.path,
                 volume: 1,
                 isMuted: false,
                 isMixable: true,
