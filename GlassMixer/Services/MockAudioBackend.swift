@@ -1,3 +1,4 @@
+import CoreAudio
 import Foundation
 
 actor MockAudioBackend: AudioBackend {
