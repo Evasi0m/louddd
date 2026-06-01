@@ -1,9 +1,13 @@
 import Foundation
 
+/// Optional boundary that forwards to a fallback backend (e.g. the mock) when present, and otherwise
+/// reports unavailable. Retained as a documented alternative path; the primary real implementation is
+/// `SystemAudioProcessBackend` + `AudioProcessTapController`.
 actor VirtualAudioDriverBackend: AudioBackend {
     private let fallback: AudioBackend?
     private var appContinuation: AsyncStream<[AudioApp]>.Continuation?
     private var deviceContinuation: AsyncStream<AudioDevice?>.Continuation?
+    private var deviceListContinuation: AsyncStream<[AudioDevice]>.Continuation?
     private var forwardingTasks: [Task<Void, Never>] = []
 
     init(fallback: AudioBackend? = nil) {
@@ -26,6 +30,12 @@ actor VirtualAudioDriverBackend: AudioBackend {
         }
     }
 
+    nonisolated var deviceListUpdates: AsyncStream<[AudioDevice]> {
+        AsyncStream { continuation in
+            Task { await self.setDeviceListContinuation(continuation) }
+        }
+    }
+
     func start() async throws {
         if let fallback {
             try await fallback.start()
@@ -37,6 +47,11 @@ actor VirtualAudioDriverBackend: AudioBackend {
             forwardingTasks.append(Task {
                 for await device in fallback.deviceUpdates {
                     self.yieldDevice(device)
+                }
+            })
+            forwardingTasks.append(Task {
+                for await devices in fallback.deviceListUpdates {
+                    self.yieldDeviceList(devices)
                 }
             })
             return
@@ -53,24 +68,33 @@ actor VirtualAudioDriverBackend: AudioBackend {
 
     func setVolume(_ volume: Double, for appID: AudioApp.ID) async throws {
         guard (0...1.5).contains(volume) else { throw AudioBackendError.invalidVolume }
+        guard let fallback else { throw AudioBackendError.driverUnavailable }
+        try await fallback.setVolume(volume, for: appID)
+    }
 
-        if let fallback {
-            try await fallback.setVolume(volume, for: appID)
-            return
-        }
-
-        // Production hook: send `setGain(volume, forSession: appID)` to the audio agent over XPC.
-        throw AudioBackendError.driverUnavailable
+    func setMute(_ muted: Bool, for appID: AudioApp.ID) async throws {
+        guard let fallback else { throw AudioBackendError.driverUnavailable }
+        try await fallback.setMute(muted, for: appID)
     }
 
     func setFocusProfile(_ profile: FocusProfile) async throws {
-        if let fallback {
-            try await fallback.setFocusProfile(profile)
-            return
-        }
+        guard let fallback else { throw AudioBackendError.driverUnavailable }
+        try await fallback.setFocusProfile(profile)
+    }
 
-        // Production hook: send the focus policy to the mixer engine inside the audio agent.
-        throw AudioBackendError.driverUnavailable
+    func setDefaultOutputDevice(_ deviceID: AudioDevice.ID) async throws {
+        guard let fallback else { throw AudioBackendError.driverUnavailable }
+        try await fallback.setDefaultOutputDevice(deviceID)
+    }
+
+    func setDeviceVolume(_ volume: Double, for deviceID: AudioDevice.ID) async throws {
+        guard let fallback else { throw AudioBackendError.driverUnavailable }
+        try await fallback.setDeviceVolume(volume, for: deviceID)
+    }
+
+    func setDeviceMute(_ muted: Bool, for deviceID: AudioDevice.ID) async throws {
+        guard let fallback else { throw AudioBackendError.driverUnavailable }
+        try await fallback.setDeviceMute(muted, for: deviceID)
     }
 
     private func setAppContinuation(_ continuation: AsyncStream<[AudioApp]>.Continuation) {
@@ -81,11 +105,19 @@ actor VirtualAudioDriverBackend: AudioBackend {
         deviceContinuation = continuation
     }
 
+    private func setDeviceListContinuation(_ continuation: AsyncStream<[AudioDevice]>.Continuation) {
+        deviceListContinuation = continuation
+    }
+
     private func yieldApps(_ apps: [AudioApp]) {
         appContinuation?.yield(apps)
     }
 
     private func yieldDevice(_ device: AudioDevice?) {
         deviceContinuation?.yield(device)
+    }
+
+    private func yieldDeviceList(_ devices: [AudioDevice]) {
+        deviceListContinuation?.yield(devices)
     }
 }

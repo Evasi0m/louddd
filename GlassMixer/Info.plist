@@ -22,6 +22,8 @@
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>NSAudioCaptureUsageDescription</key>
+	<string>louddd! taps each app's audio so it can set per-app volume and show live meters. Audio stays on your Mac and is never recorded or sent anywhere. louddd! แตะสัญญาณเสียงของแต่ละแอปเพื่อปรับระดับเสียงแยกรายแอปและแสดงมิเตอร์แบบเรียลไทม์ โดยเสียงทั้งหมดอยู่บนเครื่องของคุณ ไม่มีการบันทึกหรือส่งออกไปที่ใด</string>
 	<key>NSHumanReadableCopyright</key>
 	<string></string>
 	<key>NSPrincipalClass</key>

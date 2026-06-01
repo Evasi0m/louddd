@@ -15,7 +15,6 @@
 		100000000000000000000106 /* AudioControlService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000006 /* AudioControlService.swift */; };
 		100000000000000000000107 /* MockAudioBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000007 /* MockAudioBackend.swift */; };
 		100000000000000000000108 /* VirtualAudioDriverBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000008 /* VirtualAudioDriverBackend.swift */; };
-		100000000000000000000109 /* AudioDeviceObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000009 /* AudioDeviceObserver.swift */; };
 		10000000000000000000010A /* MixerStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000000A /* MixerStore.swift */; };
 		10000000000000000000010B /* MenuBarRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000000B /* MenuBarRootView.swift */; };
 		10000000000000000000010C /* AppVolumeRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000000C /* AppVolumeRow.swift */; };
@@ -25,6 +24,13 @@
 		100000000000000000000110 /* AppIconResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000010 /* AppIconResolver.swift */; };
 		100000000000000000000111 /* Formatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000011 /* Formatters.swift */; };
 		100000000000000000000112 /* SystemAudioProcessBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000013 /* SystemAudioProcessBackend.swift */; };
+		100000000000000000000114 /* AudioDeviceTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000014 /* AudioDeviceTransport.swift */; };
+		100000000000000000000115 /* OutputDeviceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000015 /* OutputDeviceManager.swift */; };
+		100000000000000000000116 /* AudioProcessTapController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000016 /* AudioProcessTapController.swift */; };
+		100000000000000000000117 /* OutputDevicePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000017 /* OutputDevicePickerView.swift */; };
+		100000000000000000000118 /* CoreAudioProperty.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000018 /* CoreAudioProperty.swift */; };
+		100000000000000000000119 /* PreferencesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000019 /* PreferencesStore.swift */; };
+		10000000000000000000011A /* GlassStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000001A /* GlassStyle.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -36,7 +42,6 @@
 		100000000000000000000006 /* AudioControlService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioControlService.swift; sourceTree = "<group>"; };
 		100000000000000000000007 /* MockAudioBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockAudioBackend.swift; sourceTree = "<group>"; };
 		100000000000000000000008 /* VirtualAudioDriverBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VirtualAudioDriverBackend.swift; sourceTree = "<group>"; };
-		100000000000000000000009 /* AudioDeviceObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDeviceObserver.swift; sourceTree = "<group>"; };
 		10000000000000000000000A /* MixerStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MixerStore.swift; sourceTree = "<group>"; };
 		10000000000000000000000B /* MenuBarRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarRootView.swift; sourceTree = "<group>"; };
 		10000000000000000000000C /* AppVolumeRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppVolumeRow.swift; sourceTree = "<group>"; };
@@ -47,6 +52,14 @@
 		100000000000000000000011 /* Formatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Formatters.swift; sourceTree = "<group>"; };
 		100000000000000000000012 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		100000000000000000000013 /* SystemAudioProcessBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemAudioProcessBackend.swift; sourceTree = "<group>"; };
+		100000000000000000000014 /* AudioDeviceTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDeviceTransport.swift; sourceTree = "<group>"; };
+		100000000000000000000015 /* OutputDeviceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutputDeviceManager.swift; sourceTree = "<group>"; };
+		100000000000000000000016 /* AudioProcessTapController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioProcessTapController.swift; sourceTree = "<group>"; };
+		100000000000000000000017 /* OutputDevicePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutputDevicePickerView.swift; sourceTree = "<group>"; };
+		100000000000000000000018 /* CoreAudioProperty.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreAudioProperty.swift; sourceTree = "<group>"; };
+		100000000000000000000019 /* PreferencesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesStore.swift; sourceTree = "<group>"; };
+		10000000000000000000001A /* GlassStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassStyle.swift; sourceTree = "<group>"; };
+		10000000000000000000001B /* GlassMixer.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GlassMixer.entitlements; sourceTree = "<group>"; };
 		100000000000000000000020 /* louddd!.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "louddd!.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -79,6 +92,7 @@
 				100000000000000000000046 /* Views */,
 				100000000000000000000047 /* Support */,
 				100000000000000000000012 /* Info.plist */,
+				10000000000000000000001B /* GlassMixer.entitlements */,
 			);
 			path = GlassMixer;
 			sourceTree = "<group>";
@@ -96,6 +110,7 @@
 			children = (
 				100000000000000000000002 /* AudioApp.swift */,
 				100000000000000000000003 /* AudioDevice.swift */,
+				100000000000000000000014 /* AudioDeviceTransport.swift */,
 				100000000000000000000004 /* FocusProfile.swift */,
 			);
 			path = Models;
@@ -109,7 +124,8 @@
 				100000000000000000000007 /* MockAudioBackend.swift */,
 				100000000000000000000008 /* VirtualAudioDriverBackend.swift */,
 				100000000000000000000013 /* SystemAudioProcessBackend.swift */,
-				100000000000000000000009 /* AudioDeviceObserver.swift */,
+				100000000000000000000015 /* OutputDeviceManager.swift */,
+				100000000000000000000016 /* AudioProcessTapController.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -130,6 +146,7 @@
 				10000000000000000000000D /* LiquidSlider.swift */,
 				10000000000000000000000E /* AudioActivityWaveView.swift */,
 				10000000000000000000000F /* EmptyAudioStateView.swift */,
+				100000000000000000000017 /* OutputDevicePickerView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -139,6 +156,9 @@
 			children = (
 				100000000000000000000010 /* AppIconResolver.swift */,
 				100000000000000000000011 /* Formatters.swift */,
+				100000000000000000000018 /* CoreAudioProperty.swift */,
+				100000000000000000000019 /* PreferencesStore.swift */,
+				10000000000000000000001A /* GlassStyle.swift */,
 			);
 			path = Support;
 			sourceTree = "<group>";
@@ -228,7 +248,13 @@
 				100000000000000000000107 /* MockAudioBackend.swift in Sources */,
 				100000000000000000000108 /* VirtualAudioDriverBackend.swift in Sources */,
 				100000000000000000000112 /* SystemAudioProcessBackend.swift in Sources */,
-				100000000000000000000109 /* AudioDeviceObserver.swift in Sources */,
+				100000000000000000000114 /* AudioDeviceTransport.swift in Sources */,
+				100000000000000000000115 /* OutputDeviceManager.swift in Sources */,
+				100000000000000000000116 /* AudioProcessTapController.swift in Sources */,
+				100000000000000000000117 /* OutputDevicePickerView.swift in Sources */,
+				100000000000000000000118 /* CoreAudioProperty.swift in Sources */,
+				100000000000000000000119 /* PreferencesStore.swift in Sources */,
+				10000000000000000000011A /* GlassStyle.swift in Sources */,
 				10000000000000000000010A /* MixerStore.swift in Sources */,
 				10000000000000000000010B /* MenuBarRootView.swift in Sources */,
 				10000000000000000000010C /* AppVolumeRow.swift in Sources */,
@@ -294,7 +320,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -349,7 +375,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
@@ -362,6 +388,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				CODE_SIGN_ENTITLEMENTS = GlassMixer/GlassMixer.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -374,7 +401,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.louddd;
 				PRODUCT_NAME = "louddd!";
@@ -388,6 +415,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				CODE_SIGN_ENTITLEMENTS = GlassMixer/GlassMixer.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -400,7 +428,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.louddd;
 				PRODUCT_NAME = "louddd!";

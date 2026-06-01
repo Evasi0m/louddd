@@ -3,9 +3,19 @@ import Foundation
 actor MockAudioBackend: AudioBackend {
     private var appContinuation: AsyncStream<[AudioApp]>.Continuation?
     private var deviceContinuation: AsyncStream<AudioDevice?>.Continuation?
+    private var deviceListContinuation: AsyncStream<[AudioDevice]>.Continuation?
     private var simulationTask: Task<Void, Never>?
     private var volumes: [AudioApp.ID: Double] = [:]
+    private var mutes: Set<AudioApp.ID> = []
     private var focusProfile = FocusProfile()
+    private var selectedDeviceID: AudioObjectID = 1
+
+    private let devices: [AudioDevice] = [
+        AudioDevice(id: 1, uid: "BuiltInSpeaker", name: "MacBook Pro Speakers", isDefaultOutput: true, transport: .builtIn, volume: 0.7),
+        AudioDevice(id: 2, uid: "AirPodsPro", name: "AirPods Pro", isDefaultOutput: false, transport: .bluetooth, volume: 0.55, batteryPercent: 82),
+        AudioDevice(id: 3, uid: "StudioDisplay", name: "Studio Display Speakers", isDefaultOutput: false, transport: .displayPort, volume: 0.5),
+        AudioDevice(id: 4, uid: "USBInterface", name: "Scarlett 2i2 USB", isDefaultOutput: false, transport: .usb, volume: 0.8)
+    ]
 
     nonisolated var appUpdates: AsyncStream<[AudioApp]> {
         AsyncStream { continuation in
@@ -19,10 +29,16 @@ actor MockAudioBackend: AudioBackend {
         }
     }
 
+    nonisolated var deviceListUpdates: AsyncStream<[AudioDevice]> {
+        AsyncStream { continuation in
+            Task { await self.setDeviceListContinuation(continuation) }
+        }
+    }
+
     func start() async throws {
         guard simulationTask == nil else { return }
 
-        deviceContinuation?.yield(AudioDevice(id: 1, name: "MacBook Pro Speakers", isDefaultOutput: true))
+        publishDevices()
 
         simulationTask = Task {
             var tick = 0.0
@@ -37,10 +53,6 @@ actor MockAudioBackend: AudioBackend {
                 ]
 
                 appContinuation?.yield(apps)
-
-                if Int(tick) % 45 == 20 {
-                    deviceContinuation?.yield(AudioDevice(id: 2, name: "AirPods Pro", isDefaultOutput: true))
-                }
 
                 try? await Task.sleep(for: .milliseconds(140))
             }
@@ -57,6 +69,10 @@ actor MockAudioBackend: AudioBackend {
         volumes[appID] = volume
     }
 
+    func setMute(_ muted: Bool, for appID: AudioApp.ID) async throws {
+        if muted { mutes.insert(appID) } else { mutes.remove(appID) }
+    }
+
     func setFocusProfile(_ profile: FocusProfile) async throws {
         focusProfile = profile
         guard profile.isEnabled else { return }
@@ -68,12 +84,42 @@ actor MockAudioBackend: AudioBackend {
         }
     }
 
+    func setDefaultOutputDevice(_ deviceID: AudioDevice.ID) async throws {
+        guard devices.contains(where: { $0.id == deviceID }) else {
+            throw AudioBackendError.deviceUnavailable
+        }
+        selectedDeviceID = deviceID
+        publishDevices()
+    }
+
+    func setDeviceVolume(_ volume: Double, for deviceID: AudioDevice.ID) async throws {
+        guard devices.contains(where: { $0.id == deviceID }) else {
+            throw AudioBackendError.deviceUnavailable
+        }
+    }
+
+    func setDeviceMute(_ muted: Bool, for deviceID: AudioDevice.ID) async throws {}
+
+    private func publishDevices() {
+        let list = devices.map { device -> AudioDevice in
+            var copy = device
+            copy.isDefaultOutput = device.id == selectedDeviceID
+            return copy
+        }
+        deviceListContinuation?.yield(list)
+        deviceContinuation?.yield(list.first { $0.isDefaultOutput })
+    }
+
     private func setAppContinuation(_ continuation: AsyncStream<[AudioApp]>.Continuation) {
         appContinuation = continuation
     }
 
     private func setDeviceContinuation(_ continuation: AsyncStream<AudioDevice?>.Continuation) {
         deviceContinuation = continuation
+    }
+
+    private func setDeviceListContinuation(_ continuation: AsyncStream<[AudioDevice]>.Continuation) {
+        deviceListContinuation = continuation
     }
 
     private func makeApp(
@@ -89,10 +135,12 @@ actor MockAudioBackend: AudioBackend {
         let id = AudioApp.identity(processID: pid, bundleIdentifier: bundleID)
         let pulse = (sin(tick) + 1) / 2
         let phraseGate = ((sin(tick * 0.31) + 1) / 2) < audibleWindow
+        let isMuted = mutes.contains(id)
         let focusVolume = isFaceTime && focusProfile.isEnabled && !focusProfile.shouldBypass(appID: id)
             ? focusProfile.faceTimeVolume
             : (volumes[id] ?? (isFaceTime ? 1.0 : 0.65))
-        let animatedPeak = phraseGate ? max(0.04, min(1.0, basePeak * (0.58 + pulse * 0.52))) : 0
+        let rawPeak = phraseGate ? max(0.04, min(1.0, basePeak * (0.58 + pulse * 0.52))) : 0
+        let animatedPeak = isMuted ? 0 : rawPeak
 
         return AudioApp(
             id: id,
@@ -101,9 +149,10 @@ actor MockAudioBackend: AudioBackend {
             displayName: name,
             iconPathHint: nil,
             volume: focusVolume,
+            isMuted: isMuted,
             isMixable: isMixable,
             canControlVolume: true,
-            isAudible: animatedPeak > 0.035,
+            isAudible: rawPeak > 0.035,
             peakLevel: animatedPeak,
             rmsLevel: animatedPeak * 0.72,
             isFaceTimeCandidate: isFaceTime

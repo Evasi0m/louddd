@@ -1,23 +1,55 @@
 # louddd!
 
-`louddd!` is a native, windowless macOS menu bar app prototype for per-app audio mixing.
+`louddd!` is a native, windowless macOS menu bar app for **per-app audio mixing** with a
+**native Liquid Glass** UI.
 
-The app is intentionally built as a `MenuBarExtra` only:
+The app is built as a `MenuBarExtra` only:
 
-- no standard app window
-- no Dock icon via `LSUIElement`
-- compact SwiftUI liquid glass panel
-- CoreAudio process detection for apps currently running output audio
-- virtual-driver backend boundary for real per-app gain control
+- no standard app window, no Dock icon (`LSUIElement`)
+- compact SwiftUI panel using the macOS 26 **Liquid Glass** APIs (`glassEffect`, `GlassEffectContainer`)
+- real per-app volume + live meters via **Core Audio Process Taps**
+- output device picker with Bluetooth / transport detection and switching
 
-## Current State
+## Features
 
-macOS does not allow a normal app to directly change arbitrary per-app output volume through public CoreAudio APIs. `louddd!` therefore separates the app into two layers:
+- **Per-app volume & mute/solo** — each app producing audio gets an independent slider, mute, and
+  solo, with real-time peak/RMS meters.
+- **Output device picker** — lists every output device with its transport icon (Bluetooth, AirPods,
+  USB, built-in, AirPlay…), best-effort Bluetooth battery, a default checkmark, tap-to-switch, and a
+  per-device hardware volume slider.
+- **Smart Focus** — duck or prioritize voice apps (e.g. FaceTime) automatically, with manual per-app
+  bypass.
+- **Persistence** — per-app volumes/mutes (keyed by bundle id) and the last output device are restored
+  on relaunch.
+- **Live menu-bar meter** — the menu-bar waveform glyph swells with the loudest active app.
 
-- `SystemAudioProcessBackend`: detects apps that are currently producing output audio, such as Safari playing YouTube.
-- `VirtualAudioDriverBackend`: placeholder boundary for the real virtual audio device / mixer / XPC agent path required for actual per-app gain control.
+## How per-app volume actually works
 
-Detected apps can appear before the virtual driver exists, but real per-app volume control requires routing audio through the virtual mixer backend.
+macOS exposes **no public API to set another app's output volume directly**. `louddd!` implements
+real per-app gain with the modern, Apple-sanctioned mechanism (macOS 14.4+), which supersedes shipping
+a third-party HAL virtual driver:
+
+1. `AudioProcessTapController` creates a **muted process tap** (`CATapDescription` +
+   `AudioHardwareCreateProcessTap`) for each controllable app — routing its audio to our engine.
+2. The taps are combined into a **private aggregate device** bound to the chosen output device.
+3. An IOProc applies each app's gain, mixes, meters, and renders to the output device.
+
+This requires the **audio-recording permission** (prompted on first use) — see
+`NSAudioCaptureUsageDescription` in `Info.plist` and `com.apple.security.device.audio-input` in
+`GlassMixer.entitlements`. Output-device switching and per-device volume use fully supported public
+APIs and work without that permission.
+
+### Layers
+
+- `SystemAudioProcessBackend` — real backend: process detection + tap engine + device control. Degrades
+  to detection-only when audio-recording permission is unavailable.
+- `OutputDeviceManager` — output device enumeration, switching, per-device volume/mute, transport/battery.
+- `AudioProcessTapController` — the per-app tap + aggregate + render engine.
+- `MockAudioBackend` / `VirtualAudioDriverBackend` — simulation + forwarding boundary for UI work.
+
+## Requirements
+
+- **macOS 26 (Tahoe)** and **Xcode 26** — required for the native Liquid Glass APIs.
 
 ## Run
 
@@ -31,24 +63,11 @@ The built app is:
 work/DerivedData/Build/Products/Debug/louddd!.app
 ```
 
+> To exercise real per-app volume the app must be **signed with the entitlement** (set a
+> `DEVELOPMENT_TEAM`, or sign ad-hoc). Grant the audio-recording permission on first launch. For
+> UI-only work without permission, launch with `--demo-audio` to drive the mock backend.
+
 ## Xcode
 
-Open:
-
-```text
-GlassMixer.xcodeproj
-```
-
-The internal project/target name is still `GlassMixer` for Xcode project stability, but the product name, bundle display, and app UI are `louddd!`.
-
-## Menu Bar Only
-
-`GlassMixer/Info.plist` contains:
-
-```xml
-<key>LSUIElement</key>
-<true/>
-```
-
-That keeps the app out of the Dock and makes it run as a status bar utility.
-
+Open `GlassMixer.xcodeproj`. The internal project/target name is still `GlassMixer` for project
+stability; the product name and UI are `louddd!`.
