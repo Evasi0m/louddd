@@ -17,8 +17,8 @@
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "100000000000000000000060"
                BuildableName = "louddd!.app"
-               BlueprintName = "GlassMixer"
-               ReferencedContainer = "container:GlassMixer.xcodeproj">
+               BlueprintName = "louddd!"
+               ReferencedContainer = "container:louddd!.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -47,8 +47,8 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "100000000000000000000060"
             BuildableName = "louddd!.app"
-            BlueprintName = "GlassMixer"
-            ReferencedContainer = "container:GlassMixer.xcodeproj">
+            BlueprintName = "louddd!"
+            ReferencedContainer = "container:louddd!.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -64,8 +64,8 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "100000000000000000000060"
             BuildableName = "louddd!.app"
-            BlueprintName = "GlassMixer"
-            ReferencedContainer = "container:GlassMixer.xcodeproj">
+            BlueprintName = "louddd!"
+            ReferencedContainer = "container:louddd!.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

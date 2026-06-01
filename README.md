@@ -69,5 +69,5 @@ work/DerivedData/Build/Products/Debug/louddd!.app
 
 ## Xcode
 
-Open `GlassMixer.xcodeproj`. The internal project/target name is still `GlassMixer` for project
-stability; the product name and UI are `louddd!`.
+Open `louddd!.xcodeproj`. The project, target, and scheme are all named `louddd!`. The source folder
+is `GlassMixer/` for internal path stability.

@@ -186,8 +186,8 @@
 			);
 			dependencies = (
 			);
-			name = GlassMixer;
-			productName = GlassMixer;
+			name = "louddd!";
+			productName = "louddd!";
 			productReference = 100000000000000000000020 /* louddd!.app */;
 			productType = "com.apple.product-type.application";
 		};

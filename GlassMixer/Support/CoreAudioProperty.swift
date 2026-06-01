@@ -36,7 +36,9 @@ enum CoreAudioProperty {
         var address = address
         var value = defaultValue
         var size = UInt32(MemoryLayout<T>.size)
-        let status = AudioObjectGetPropertyData(object, &address, 0, nil, &size, &value)
+        let status = withUnsafeMutablePointer(to: &value) { pointer in
+            AudioObjectGetPropertyData(object, &address, 0, nil, &size, UnsafeMutableRawPointer(pointer))
+        }
         guard status == noErr else { throw CoreAudioError.osStatus(status) }
         return value
     }
@@ -73,7 +75,9 @@ enum CoreAudioProperty {
         var address = address
         var value: Unmanaged<CFString>?
         var size = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
-        let status = AudioObjectGetPropertyData(object, &address, 0, nil, &size, &value)
+        let status = withUnsafeMutablePointer(to: &value) { pointer in
+            AudioObjectGetPropertyData(object, &address, 0, nil, &size, UnsafeMutableRawPointer(pointer))
+        }
         guard status == noErr, let value else { throw CoreAudioError.osStatus(status) }
         return value.takeRetainedValue() as String
     }
@@ -84,9 +88,10 @@ enum CoreAudioProperty {
         value: T
     ) throws {
         var address = address
-        var value = value
         let size = UInt32(MemoryLayout<T>.size)
-        let status = AudioObjectSetPropertyData(object, &address, 0, nil, size, &value)
+        let status = withUnsafePointer(to: value) { pointer in
+            AudioObjectSetPropertyData(object, &address, 0, nil, size, UnsafeRawPointer(pointer))
+        }
         guard status == noErr else { throw CoreAudioError.osStatus(status) }
     }
 }
