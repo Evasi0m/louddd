@@ -59,6 +59,8 @@ blank):
   it's marked as a *template* so macOS tints it for light/dark menu bars automatically.
 - **Per-app fallback icon** → `AppPlaceholder` set. Shown for apps whose real icon can't be resolved
   (real app icons otherwise come from the system automatically).
+- **Panel logo** → `PanelLogo` set. The badge at the top-left of the panel (clipped to a 38pt circle);
+  falls back to the gradient waveform badge until you add an image.
 
 ## Requirements
 
